@@ -18,36 +18,57 @@ class ViewController: UITableViewController {
         self.title = "Forecasts"
         let query = "https://api.darksky.net/forecast/\(apiKey)/41.8781,-87.6298"
         
-        if let url = URL(string: query) {
-            if let data = try? Data(contentsOf: url) {
-                let json = try! JSON(data: data)
-                if json["status"] == "ok" {
-                    parse(json: json)
+        DispatchQueue.global(qos: .userInitiated).async {
+            [unowned self] in
+            if let url = URL(string: query) {
+                if let data = try? Data(contentsOf: url) {
+                    let json = try! JSON(data: data)
+                    self.parse(json: json)
                     return
                 }
             }
+            self.loadError()
         }
-        loadError()
     }
     
     func parse(json: JSON) {
-        for result in json["hourly"].arrayValue{
-            let summary = result["summary"].stringValue
-            let icon = result["icon"].stringValue
-            let data = result["data"].stringValue
-            let forecast = ["summary": summary, "icon": icon, "data": data]
-            self.forecasts.append(forecast)
+        DispatchQueue.main.async {
+            [unowned self] in
+            print("here")
+            for result in json[""].arrayValue{
+                print("yay")
+                let icon = result["icon"].stringValue
+                let summary = result["summary"].stringValue
+                let data = result["data"].stringValue
+                let forecast = ["icon": icon, "summary": summary, data: "data"]
+                self.forecasts.append(forecast)
+                print(forecast)
+            }
+            self.tableView.reloadData()
         }
-        self.tableView.reloadData()
-
     }
     
     func loadError() {
-        let alert = UIAlertController(title: "Loading Error",
-                                      message: "There was a problem loading the news feed",
-                                      preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        present(alert, animated: true, completion: nil)
+        DispatchQueue.main.async {
+            [unowned self] in
+            let alert = UIAlertController(title: "Loading Error", message: "There was a problem loading the news feed", preferredStyle: .actionSheet)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return forecasts.count
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
+        let forecast = forecasts[indexPath.row]
+        cell.textLabel?.text = forecast["summary"]
+        cell.detailTextLabel?.text = forecast["data"]
+        
+        return cell
     }
     
 
